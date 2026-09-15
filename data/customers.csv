@@ -1,0 +1,13 @@
+CustomerID,Age,Income,SpendingScore,Persona,Cluster
+C001,25,80000,85,High-Value Customer,0
+C002,35,30000,25,Budget Customer,1
+C003,29,75000,35,Potential Customer,2
+C004,22,40000,80,Impulsive Spender,3
+C005,40,85000,90,High-Value Customer,0
+C006,45,28000,20,Budget Customer,1
+C007,31,70000,40,Potential Customer,2
+C008,24,35000,75,Impulsive Spender,3
+C009,38,90000,88,High-Value Customer,0
+C010,42,32000,30,Budget Customer,1
+C011,30,78000,42,Potential Customer,2
+C012,23,38000,78,Impulsive Spender,3

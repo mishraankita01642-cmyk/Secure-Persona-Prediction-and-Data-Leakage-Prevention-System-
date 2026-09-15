@@ -1,0 +1,13 @@
+import pandas as pd
+df = pd.read_csv("data/customers.csv")
+print("CUSTOMER ANALYTICS")
+print("=" * 50)
+total_customers = len(df)
+print("Total Customers:", total_customers)
+average_income = df["Income"].mean()
+print("Average Income:", average_income)
+average_spending = df["SpendingScore"].mean()
+print("Average Spending Score:", average_spending)
+persona_counts = df["Persona"].value_counts()
+print("\nPersona Distribution:")
+print(persona_counts)
