@@ -1,7 +1,35 @@
-import customtkinter as ctk
-from tkinter import messagebox
+from security import verify_password
+from security import hash_password
+from database import register_user
+from database import login_user
+try:
+    import customtkinter as ctk
+except ModuleNotFoundError:
+    import tkinter as tk
+    from tkinter import messagebox
+
+    class _CustomTkinterUnavailable:
+        def __getattr__(self, name):
+            raise ModuleNotFoundError(
+                "customtkinter is not installed. Install it with: pip install customtkinter"
+            )
+
+    ctk = _CustomTkinterUnavailable()
+    # Keep the original tkinter messagebox available for the rest of the app.
+else:
+    from tkinter import messagebox
+
 import re
 
+
+from database import (
+    register_user,
+    login_user,
+    save_prediction,
+    get_prediction_history,
+    update_user,
+    delete_user
+)
 
 # =========================================================
 # APP SETTINGS
@@ -272,7 +300,7 @@ def login_page():
         border_width=0
     )
 
-    username_entry.pack(pady=10)
+    username_entry.pack(pady=3)
 
     password_entry = ctk.CTkEntry(
         card,
@@ -285,7 +313,7 @@ def login_page():
         border_width=0
     )
 
-    password_entry.pack(pady=10)
+    password_entry.pack(pady=3)
 
     show_password_var = ctk.BooleanVar(value=False)
 
@@ -312,7 +340,6 @@ def login_page():
 
     def perform_login():
 
-        global current_username
 
         username = username_entry.get().strip()
         password = password_entry.get()
@@ -331,12 +358,25 @@ def login_page():
             )
             return
 
-        # Temporary GUI login.
-        # Member 2 will connect the database later.
+        user = login_user(username, password)
 
-        current_username = username
+        if user:
+            global current_username
+            current_username = username
 
-        dashboard_page()
+            messagebox.showinfo(
+                "Login Successful",
+                "Login successful!"
+            )
+
+            dashboard_page()
+
+        else:
+            messagebox.showerror(
+                "Login Failed",
+                "Invalid username or password."
+            )
+
 
     login_button = ctk.CTkButton(
         card,
@@ -427,7 +467,7 @@ def register_page():
     card = ctk.CTkFrame(
         main,
         width=500,
-        height=610,
+        height=650,
         fg_color=CARD_COLOR,
         corner_radius=25
     )
@@ -454,7 +494,7 @@ def register_page():
         font=("Arial", 13)
     )
 
-    subtitle.pack(pady=(0, 15))
+    subtitle.pack(pady=(0, 10))
 
     name_entry = ctk.CTkEntry(
         card,
@@ -466,7 +506,7 @@ def register_page():
         border_width=0
     )
 
-    name_entry.pack(pady=5)
+    name_entry.pack(pady=3)
 
     email_entry = ctk.CTkEntry(
         card,
@@ -478,7 +518,7 @@ def register_page():
         border_width=0
     )
 
-    email_entry.pack(pady=5)
+    email_entry.pack(pady=3)
 
     username_entry = ctk.CTkEntry(
         card,
@@ -490,7 +530,7 @@ def register_page():
         border_width=0
     )
 
-    username_entry.pack(pady=5)
+    username_entry.pack(pady=3)
 
     password_entry = ctk.CTkEntry(
         card,
@@ -503,7 +543,7 @@ def register_page():
         border_width=0
     )
 
-    password_entry.pack(pady=5)
+    password_entry.pack(pady=3)
 
     strength_label = ctk.CTkLabel(
         card,
@@ -512,7 +552,18 @@ def register_page():
         font=("Arial", 12)
     )
 
-    strength_label.pack(pady=3)
+    strength_label.pack(pady=2)
+
+    phone_entry = ctk.CTkEntry(
+    card,
+    width=350,
+    height=40,
+    corner_radius=10,
+    placeholder_text="Phone Number",
+    fg_color=INPUT_COLOR,
+    border_width=0
+)
+    phone_entry.pack(pady=3)
 
     # Password strength update
     def update_password_strength(event=None):
@@ -561,16 +612,19 @@ def register_page():
         border_width=0
     )
 
-    confirm_entry.pack(pady=5)
+    confirm_entry.pack(pady=3)
 
     def perform_registration():
-
+        print("HASH FUNCTION:", hash_password)
+        print("TEST BCRYPT HASH:", hash_password("Test@1234"))
         name = name_entry.get().strip()
         email = email_entry.get().strip()
+        phone = phone_entry.get().strip()
         username = username_entry.get().strip()
         password = password_entry.get()
         confirm_password = confirm_entry.get()
 
+        # Check name
         if name == "":
             messagebox.showerror(
                 "Registration Error",
@@ -578,6 +632,7 @@ def register_page():
             )
             return
 
+        # Check email
         if email == "":
             messagebox.showerror(
                 "Registration Error",
@@ -594,6 +649,15 @@ def register_page():
             )
             return
 
+        # Check phone
+        if phone == "":
+            messagebox.showerror(
+                "Registration Error",
+                "Please enter your phone number."
+            )
+            return
+
+        # Check username
         if username == "":
             messagebox.showerror(
                 "Registration Error",
@@ -601,6 +665,7 @@ def register_page():
             )
             return
 
+        # Check password
         if password == "":
             messagebox.showerror(
                 "Registration Error",
@@ -615,6 +680,7 @@ def register_page():
             )
             return
 
+        # Check password confirmation
         if password != confirm_password:
             messagebox.showerror(
                 "Registration Error",
@@ -622,11 +688,32 @@ def register_page():
             )
             return
 
-        messagebox.showinfo(
-            "Registration Successful",
-            "Registration form is valid!\n\n"
-            "Database connection will be added later."
-        )
+        # Hash password before saving
+        password_hash = hash_password(password)
+
+        # Save user in database
+        try:
+            register_user(
+                name,
+                email,
+                phone,
+                username,
+                password_hash
+            )
+
+            messagebox.showinfo(
+                "Registration Successful",
+                "Account created successfully!"
+            )
+
+            login_page()
+
+        except Exception as e:
+            messagebox.showerror(
+                "Registration Error",
+                f"Could not create account.\n\n{e}"
+            )
+
 
     create_button = ctk.CTkButton(
         card,
@@ -639,8 +726,7 @@ def register_page():
         font=("Arial", 15, "bold"),
         command=perform_registration
     )
-
-    create_button.pack(pady=12)
+    create_button.pack(pady=10)
 
     login_button = ctk.CTkButton(
         card,
@@ -652,7 +738,7 @@ def register_page():
         command=login_page
     )
 
-    login_button.pack()
+    login_button.pack(pady=5)
 
 
 # =========================================================
